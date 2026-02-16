@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статистика - Админ</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            padding: 16px;
+            padding-bottom: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .subtitle {
+            color: var(--tg-theme-hint-color, #999);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            border: 1px solid var(--tg-theme-button-color, #0088cc);
+            border-radius: 10px;
+            background: transparent;
+            color: var(--tg-theme-button-color, #0088cc);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: var(--tg-theme-button-color, #0088cc);
+            color: #fff;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stats-card {
+            background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .stats-title {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .stats-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--tg-theme-button-color, #0088cc);
+        }
+
+        .employee-card {
+            background: var(--tg-theme-bg-color, #fff);
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .employee-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .employee-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .employee-hours {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--tg-theme-button-color, #0088cc);
+        }
+
+        .employee-projects {
+            font-size: 13px;
+            color: var(--tg-theme-hint-color, #999);
+            margin-top: 8px;
+        }
+
+        .project-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .project-item:last-child {
+            border-bottom: none;
+        }
+
+        .chart-container {
+            background: var(--tg-theme-bg-color, #fff);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            height: 250px;
+        }
+
+        .report-item {
+            background: var(--tg-theme-bg-color, #fff);
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .report-date {
+            color: var(--tg-theme-hint-color, #999);
+            font-size: 12px;
+        }
+
+        .report-details {
+            color: var(--tg-theme-hint-color, #666);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: var(--tg-theme-bg-color, #fff);
+            color: var(--tg-theme-text-color, #000);
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .filter-btn.active {
+            background: var(--tg-theme-button-color, #0088cc);
+            color: #fff;
+            border-color: var(--tg-theme-button-color, #0088cc);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--tg-theme-hint-color, #999);
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--tg-theme-hint-color, #999);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Статистика</h1>
+        <div class="subtitle">Общая информация по всем сотрудникам</div>
+
+        <!-- Табы -->
+        <div class="tabs">
+            <button class="tab active" data-tab="overview">Обзор</button>
+            <button class="tab" data-tab="employees">Сотрудники</button>
+            <button class="tab" data-tab="projects">Проекты</button>
+            <button class="tab" data-tab="reports">Отчёты</button>
+        </div>
+
+        <!-- Обзор -->
+        <div class="tab-content active" id="overview">
+            <div class="stats-card">
+                <div class="stats-header">
+                    <span class="stats-title">⏱️ Всего часов</span>
+                    <span class="stats-value" id="totalHours">0</span>
+                </div>
+            </div>
+
+            <div class="stats-card">
+                <div class="stats-header">
+                    <span class="stats-title">📝 Всего отчётов</span>
+                    <span class="stats-value" id="totalReports">0</span>
+                </div>
+            </div>
+
+            <div class="stats-card">
+                <div class="stats-header">
+                    <span class="stats-title">👥 Сотрудников</span>
+                    <span class="stats-value" id="totalEmployees">0</span>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="overviewChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Сотрудники -->
+        <div class="tab-content" id="employees">
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all">Все</button>
+                <button class="filter-btn" data-filter="week">Неделя</button>
+                <button class="filter-btn" data-filter="month">Месяц</button>
+            </div>
+            <div id="employeesList"></div>
+        </div>
+
+        <!-- Проекты -->
+        <div class="tab-content" id="projects">
+            <div id="projectsList"></div>
+            <div class="chart-container">
+                <canvas id="projectsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Отчёты -->
+        <div class="tab-content" id="reports">
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter-reports="all">Все</button>
+                <button class="filter-btn" data-filter-reports="today">Сегодня</button>
+                <button class="filter-btn" data-filter-reports="week">Неделя</button>
+            </div>
+            <div id="reportsList"></div>
+        </div>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Получаем данные из бота (переданные через initData или query params)
+        // Для демо используем тестовые данные
+        let statsData = null;
+
+        // Получаем данные из query параметра
+        const urlParams = new URLSearchParams(window.location.search);
+        const dataParam = urlParams.get('data');
+        
+        if (dataParam) {
+            try {
+                statsData = JSON.parse(decodeURIComponent(dataParam));
+            } catch (e) {
+                console.error('Error parsing data:', e);
+            }
+        }
+
+        // Если данных нет - используем demo данные
+        if (!statsData) {
+            statsData = {
+                total_hours: 248,
+                total_reports: 42,
+                employees: [
+                    {
+                        name: "Иван",
+                        hours: 120,
+                        reports: 18,
+                        projects: {"Разработка": 80, "Тестирование": 40}
+                    },
+                    {
+                        name: "Мария",
+                        hours: 96,
+                        reports: 16,
+                        projects: {"Маркетинг": 60, "Дизайн": 36}
+                    },
+                    {
+                        name: "Пётр",
+                        hours: 32,
+                        reports: 8,
+                        projects: {"Поддержка": 32}
+                    }
+                ],
+                projects: {
+                    "Разработка": 80,
+                    "Маркетинг": 60,
+                    "Тестирование": 40,
+                    "Дизайн": 36,
+                    "Поддержка": 32
+                },
+                recent_reports: [
+                    {
+                        date: "2026-02-13",
+                        time: "14:30",
+                        employee: "Иван",
+                        project: "Разработка",
+                        hours: 6,
+                        comment: "Работал над API"
+                    },
+                    {
+                        date: "2026-02-13",
+                        time: "12:15",
+                        employee: "Мария",
+                        project: "Маркетинг",
+                        hours: 4,
+                        comment: "Соцсети"
+                    }
+                ]
+            };
+        }
+
+        // Отображение обзора
+        function renderOverview() {
+            document.getElementById('totalHours').textContent = statsData.total_hours;
+            document.getElementById('totalReports').textContent = statsData.total_reports;
+            document.getElementById('totalEmployees').textContent = statsData.employees.length;
+
+            // График по сотрудникам
+            const ctx = document.getElementById('overviewChart');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: statsData.employees.map(e => e.name),
+                    datasets: [{
+                        label: 'Часы',
+                        data: statsData.employees.map(e => e.hours),
+                        backgroundColor: 'rgba(0, 136, 204, 0.6)',
+                        borderColor: 'rgba(0, 136, 204, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Отображение сотрудников
+        function renderEmployees() {
+            const container = document.getElementById('employeesList');
+            container.innerHTML = '';
+
+            statsData.employees
+                .sort((a, b) => b.hours - a.hours)
+                .forEach(emp => {
+                    const card = document.createElement('div');
+                    card.className = 'employee-card';
+                    
+                    let projectsHtml = '';
+                    for (const [project, hours] of Object.entries(emp.projects)) {
+                        projectsHtml += `
+                            <div class="project-item">
+                                <span>${project}</span>
+                                <span>${hours} ч</span>
+                            </div>
+                        `;
+                    }
+
+                    card.innerHTML = `
+                        <div class="employee-header">
+                            <span class="employee-name">👤 ${emp.name}</span>
+                            <span class="employee-hours">${emp.hours} ч</span>
+                        </div>
+                        <div class="employee-projects">
+                            📝 Отчётов: ${emp.reports}
+                        </div>
+                        ${projectsHtml}
+                    `;
+                    
+                    container.appendChild(card);
+                });
+        }
+
+        // Отображение проектов
+        function renderProjects() {
+            const container = document.getElementById('projectsList');
+            container.innerHTML = '';
+
+            const sorted = Object.entries(statsData.projects).sort((a, b) => b[1] - a[1]);
+
+            sorted.forEach(([project, hours]) => {
+                const card = document.createElement('div');
+                card.className = 'stats-card';
+                card.innerHTML = `
+                    <div class="stats-header">
+                        <span class="stats-title">📁 ${project}</span>
+                        <span class="stats-value">${hours} ч</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            // График проектов
+            const ctx = document.getElementById('projectsChart');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: sorted.map(([name]) => name),
+                    datasets: [{
+                        data: sorted.map(([, hours]) => hours),
+                        backgroundColor: [
+                            'rgba(0, 136, 204, 0.8)',
+                            'rgba(76, 175, 80, 0.8)',
+                            'rgba(255, 152, 0, 0.8)',
+                            'rgba(156, 39, 176, 0.8)',
+                            'rgba(244, 67, 54, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        // Отображение отчётов
+        function renderReports() {
+            const container = document.getElementById('reportsList');
+            container.innerHTML = '';
+
+            if (!statsData.recent_reports || statsData.recent_reports.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <div>Нет отчётов</div>
+                    </div>
+                `;
+                return;
+            }
+
+            statsData.recent_reports.forEach(report => {
+                const item = document.createElement('div');
+                item.className = 'report-item';
+                item.innerHTML = `
+                    <div class="report-header">
+                        <span>👤 ${report.employee}</span>
+                        <span class="report-date">${report.date} ${report.time}</span>
+                    </div>
+                    <div>📁 ${report.project} - ${report.hours}ч</div>
+                    <div class="report-details">💬 ${report.comment}</div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Переключение табов
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Убираем active со всех
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                // Добавляем active
+                tab.classList.add('active');
+                const tabName = tab.dataset.tab;
+                document.getElementById(tabName).classList.add('active');
+
+                // Вибрация
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+            });
+        });
+
+        // Инициализация
+        renderOverview();
+        renderEmployees();
+        renderProjects();
+        renderReports();
+
+        console.log('Admin stats loaded');
+    </script>
+</body>
+</html>

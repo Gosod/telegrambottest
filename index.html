@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отчёт о работе</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            padding: 16px;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .subtitle {
+            color: var(--tg-theme-hint-color, #999);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+        }
+
+        .project-card {
+            padding: 20px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+            background: var(--tg-theme-bg-color, #fff);
+        }
+
+        .project-card:active {
+            transform: scale(0.95);
+        }
+
+        .project-card.selected {
+            border-color: var(--tg-theme-button-color, #0088cc);
+            background: var(--tg-theme-button-color, #0088cc);
+            color: #fff;
+        }
+
+        .project-abbr {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .project-name {
+            font-size: 13px;
+            opacity: 0.8;
+        }
+
+        .hours-value {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding: 16px;
+            background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+            border-radius: 12px;
+        }
+
+        .hours-display {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--tg-theme-button-color, #0088cc);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+            padding: 0;
+            margin-bottom: 12px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--tg-theme-button-color, #0088cc);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--tg-theme-button-color, #0088cc);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .quick-hours {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .quick-btn {
+            padding: 12px;
+            border: 1px solid var(--tg-theme-button-color, #0088cc);
+            background: transparent;
+            color: var(--tg-theme-button-color, #0088cc);
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:active {
+            transform: scale(0.95);
+        }
+
+        .quick-btn.active {
+            background: var(--tg-theme-button-color, #0088cc);
+            color: #fff;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            background: var(--tg-theme-bg-color, #fff);
+            color: var(--tg-theme-text-color, #000);
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--tg-theme-button-color, #0088cc);
+        }
+
+        .summary {
+            background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 24px;
+        }
+
+        .summary-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .summary-label {
+            color: var(--tg-theme-hint-color, #999);
+        }
+
+        .summary-value {
+            font-weight: 600;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .error {
+            color: #ff3b30;
+            font-size: 14px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Отчёт о работе</h1>
+        <div class="subtitle">Заполните информацию о выполненной работе</div>
+
+        <form id="reportForm">
+            <!-- Проекты -->
+            <div class="form-group">
+                <label>📁 Выберите проект</label>
+                <div class="projects-grid" id="projectsGrid"></div>
+                <div class="error" id="projectError">Выберите проект</div>
+            </div>
+
+            <!-- Часы -->
+            <div class="form-group">
+                <label>⏱️ Количество часов</label>
+                <div class="hours-value">
+                    <span>Потрачено:</span>
+                    <span class="hours-display" id="hoursDisplay">4 ч</span>
+                </div>
+                <input type="range" id="hoursRange" min="0.5" max="12" step="0.5" value="4">
+                <div class="quick-hours">
+                    <button type="button" class="quick-btn" data-hours="2">2ч</button>
+                    <button type="button" class="quick-btn" data-hours="4">4ч</button>
+                    <button type="button" class="quick-btn" data-hours="6">6ч</button>
+                    <button type="button" class="quick-btn" data-hours="8">8ч</button>
+                </div>
+            </div>
+
+            <!-- Комментарий -->
+            <div class="form-group">
+                <label>💬 Комментарий (необязательно)</label>
+                <textarea 
+                    id="comments" 
+                    placeholder="Опишите что было сделано..."
+                ></textarea>
+            </div>
+
+            <!-- Сводка -->
+            <div class="summary" id="summary" style="display: none;">
+                <div class="summary-title">📋 Сводка</div>
+                <div class="summary-item">
+                    <span class="summary-label">Проект:</span>
+                    <span class="summary-value" id="summaryProject">-</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Часы:</span>
+                    <span class="summary-value" id="summaryHours">-</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Комментарий:</span>
+                    <span class="summary-value" id="summaryComment">-</span>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        // Применяем тему Telegram
+        document.body.style.backgroundColor = tg.themeParams.bg_color || '#ffffff';
+
+        // Проекты (берём из базы бота или захардкодим для теста)
+        const projects = [
+            {"abbr": "РС", "full": "Разработка сайта"},
+            {"abbr": "МРК", "full": "Маркетинг"},
+            {"abbr": "КП", "full": "Клиентская поддержка"},
+            {"abbr": "ДЗ", "full": "Дизайн"},
+            {"abbr": "ТСТ", "full": "Тестирование"}
+        ];
+
+        // Состояние формы
+        let selectedProject = null;
+        let hours = 4;
+
+        // Отрисовка проектов
+        const projectsGrid = document.getElementById('projectsGrid');
+        projects.forEach(project => {
+            const card = document.createElement('div');
+            card.className = 'project-card';
+            card.innerHTML = `
+                <div class="project-abbr">${project.abbr}</div>
+                <div class="project-name">${project.full}</div>
+            `;
+            card.addEventListener('click', () => selectProject(card, project));
+            projectsGrid.appendChild(card);
+        });
+
+        // Выбор проекта
+        function selectProject(card, project) {
+            // Снимаем выделение со всех
+            document.querySelectorAll('.project-card').forEach(c => c.classList.remove('selected'));
+            
+            // Выделяем выбранный
+            card.classList.add('selected');
+            selectedProject = project;
+            
+            // Скрываем ошибку
+            document.getElementById('projectError').classList.remove('show');
+            
+            // Обновляем сводку
+            updateSummary();
+            
+            // Вибрация
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+
+        // Слайдер часов
+        const hoursRange = document.getElementById('hoursRange');
+        const hoursDisplay = document.getElementById('hoursDisplay');
+
+        hoursRange.addEventListener('input', (e) => {
+            hours = parseFloat(e.target.value);
+            hoursDisplay.textContent = `${hours} ч`;
+            updateQuickButtons();
+            updateSummary();
+            
+            // Обновляем градиент слайдера
+            const percent = ((hours - 0.5) / (12 - 0.5)) * 100;
+            e.target.style.background = `linear-gradient(to right, ${tg.themeParams.button_color || '#0088cc'} ${percent}%, #e0e0e0 ${percent}%)`;
+        });
+
+        // Быстрые кнопки часов
+        const quickBtns = document.querySelectorAll('.quick-btn');
+        quickBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                hours = parseFloat(btn.dataset.hours);
+                hoursRange.value = hours;
+                hoursDisplay.textContent = `${hours} ч`;
+                updateQuickButtons();
+                updateSummary();
+                
+                // Обновляем слайдер
+                const percent = ((hours - 0.5) / (12 - 0.5)) * 100;
+                hoursRange.style.background = `linear-gradient(to right, ${tg.themeParams.button_color || '#0088cc'} ${percent}%, #e0e0e0 ${percent}%)`;
+                
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+            });
+        });
+
+        function updateQuickButtons() {
+            quickBtns.forEach(btn => {
+                if (parseFloat(btn.dataset.hours) === hours) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // Комментарий
+        const commentsInput = document.getElementById('comments');
+        commentsInput.addEventListener('input', updateSummary);
+
+        // Обновление сводки
+        function updateSummary() {
+            const summary = document.getElementById('summary');
+            
+            if (selectedProject) {
+                summary.style.display = 'block';
+                document.getElementById('summaryProject').textContent = selectedProject.full;
+                document.getElementById('summaryHours').textContent = `${hours} ч`;
+                document.getElementById('summaryComment').textContent = commentsInput.value || 'Без комментария';
+            }
+        }
+
+        // Кнопка отправки в Telegram
+        tg.MainButton.setText('Отправить отчёт');
+        tg.MainButton.show();
+        tg.MainButton.onClick(() => {
+            // Валидация
+            if (!selectedProject) {
+                document.getElementById('projectError').classList.add('show');
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.notificationOccurred('error');
+                }
+                return;
+            }
+
+            // Собираем данные
+            const data = {
+                project: selectedProject.full,
+                project_abbr: selectedProject.abbr,
+                hours: hours,
+                comments: commentsInput.value || '-'
+            };
+
+            // Отправляем данные боту
+            tg.sendData(JSON.stringify(data));
+            
+            // Закрываем WebApp
+            tg.close();
+        });
+
+        // Инициализация
+        updateQuickButtons();
+        
+        // Показываем что загрузилось
+        console.log('WebApp initialized');
+        console.log('Theme:', tg.themeParams);
+    </script>
+</body>
+</html>
